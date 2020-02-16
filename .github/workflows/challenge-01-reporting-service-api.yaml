@@ -1,0 +1,98 @@
+name: challenge-01-reporting-service-api-action
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "challenge-01/source/reporting-service/ReportingService.Api/**"
+      - "challenge-01/source/reporting-service/ReportingService.Api.Domain/**"
+  pull_request:
+    branches:
+      - master
+
+env:
+  version: 1.0.${{ github.run_number }}
+
+# Create encrypted secrets on GitHub:
+# 1. service_principal
+# 2. service_principal_password
+# 3. tenant
+# 4. registry
+# 5. registry_username
+# 6. registry_password
+# 7. cluster_name
+# 8. cluster_group
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:    
+      - uses: actions/checkout@v2
+      - name: az login
+        working-directory: ${{ github.workspace }}
+        run: |
+          az login --service-principal -u ${{ secrets.service_principal }} -p ${{ secrets.service_principal_password }} --tenant ${{ secrets.tenant }}
+      - name: az acr build
+        working-directory: ${{ github.workspace }}
+        run: |
+          az acr build -f challenge-01/source/reporting-service/ReportingService.Api/Dockerfile -t ${{ secrets.registry }}.azurecr.io/reporting-service-api:${{ env.version }} -r ${{ secrets.registry }} challenge-01/source/reporting-service
+      - name: helm configuration
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eou pipefail
+          # set helm version
+          helmVersion='helm-v3.0.0-linux-amd64.tar.gz'
+          # download helm version
+          wget https://get.helm.sh/$helmVersion
+          tar xvzf $helmVersion
+          # move helm binary to local folder
+          sudo mv linux-amd64/helm /usr/bin/helm3
+          helm3 version
+      - name: helm package
+        working-directory: ${{ github.workspace }}
+        run: |
+          helm3 package --version ${{ env.version }} --app-version=${{ env.version }} challenge-01/source/charts/reporting-service-api
+      - name: az acr helm push
+        working-directory: ${{ github.workspace }}
+        run: |
+          az acr helm push -n ${{ secrets.registry }} reporting-service-api-${{ env.version }}.tgz --force
+  push:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:    
+      - uses: actions/checkout@v2
+      - name: az login
+        working-directory: ${{ github.workspace }}
+        run: |
+          az login --service-principal -u ${{ secrets.service_principal }} -p ${{ secrets.service_principal_password }} --tenant ${{ secrets.tenant }}
+      - name: helm configuration
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eou pipefail
+          # set helm version
+          helmVersion='helm-v3.0.0-linux-amd64.tar.gz'
+          # download helm version
+          wget https://get.helm.sh/$helmVersion
+          tar xvzf $helmVersion
+          # move helm binary to local folder
+          sudo mv linux-amd64/helm /usr/bin/helm3
+          helm3 version
+      - name: helm repo add
+        working-directory: ${{ github.workspace }}
+        run: |
+          helm3 repo add ${{ secrets.registry }} https://${{ secrets.registry }}.azurecr.io/helm/v1/repo --username ${{ secrets.registry_username }} --password ${{ secrets.registry_password }}
+      - name: az aks get-credentials
+        working-directory: ${{ github.workspace }}
+        run: |
+          az aks get-credentials --name ${{ secrets.cluster_name }} --resource-group ${{ secrets.cluster_group }}
+      - name: kubectl create namespace
+        working-directory: ${{ github.workspace }}
+        run: |
+          kubectl apply -f challenge-01/deploy/namespace.yaml
+      - name: helm upgrade install
+        working-directory: ${{ github.workspace }}
+        run: |
+          helm3 upgrade --install --version ${{ env.version }} -n reporting-service-api reporting-service-api ${{ secrets.registry }}/reporting-service-api --namespace=challenge-01 --set replicaCount=1 --set image.repository=${{ secrets.registry }}.azurecr.io/reporting-service-api:${{ env.version }}
