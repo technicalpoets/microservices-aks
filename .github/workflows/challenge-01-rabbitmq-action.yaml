@@ -1,4 +1,4 @@
-name: rabbitmq-action
+name: challenge-01-rabbitmq-action
 
 on:
   push:
