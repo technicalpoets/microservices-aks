@@ -75,4 +75,4 @@ volumeMounts:
 volumes:
   - name: secrets
     secret:
-      - secretName: appsettings-secrets-reporting-service-api
+      secretName: appsettings-secrets-reporting-service-api
