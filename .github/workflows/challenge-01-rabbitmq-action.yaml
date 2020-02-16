@@ -94,4 +94,4 @@ jobs:
       - name: helm upgrade install
         working-directory: ${{ github.workspace }}
         run: |
-          helm3 upgrade --install --version ${{ env.version }} -n rabbitmq rabbitmq ${{ secrets.registry }}/rabbitmq --namespace=dapr-workshop --set replicaCount=1 --set image.repository=${{ secrets.registry }}.azurecr.io/rabbitmq:${{ env.version }}
+          helm3 upgrade --install --version ${{ env.version }} -n rabbitmq rabbitmq ${{ secrets.registry }}/rabbitmq --namespace=challenge-01 --set replicaCount=1 --set image.repository=${{ secrets.registry }}.azurecr.io/rabbitmq:${{ env.version }}
