@@ -1,12 +1,12 @@
-name: challenge-01-reporting-service-web-action
+name: challenge-01-reporting-service-website-action
 
 on:
   push:
     branches:
       - master
     paths:
-      - "challenge-01/source/reporting-service/ReportingService.Web/**"
-      - "challenge-01/source/reporting-service/ReportingService.Web.Domain/**"
+      - "challenge-01/source/reporting-service/ReportingService.Website/**"
+      - "challenge-01/source/reporting-service/ReportingService.Website.Domain/**"
   pull_request:
     branches:
       - master
@@ -37,7 +37,7 @@ jobs:
       - name: az acr build
         working-directory: ${{ github.workspace }}
         run: |
-          az acr build -f challenge-01/source/reporting-service/ReportingService.Web/Dockerfile -t ${{ secrets.registry }}.azurecr.io/reporting-service-web:${{ env.version }} -r ${{ secrets.registry }} challenge-01/source/reporting-service
+          az acr build -f challenge-01/source/reporting-service/ReportingService.Website/Dockerfile -t ${{ secrets.registry }}.azurecr.io/reporting-service-website:${{ env.version }} -r ${{ secrets.registry }} challenge-01/source/reporting-service
       - name: helm configuration
         working-directory: ${{ github.workspace }}
         run: |
@@ -53,11 +53,11 @@ jobs:
       - name: helm package
         working-directory: ${{ github.workspace }}
         run: |
-          helm3 package --version ${{ env.version }} --app-version=${{ env.version }} challenge-01/source/charts/reporting-service-web
+          helm3 package --version ${{ env.version }} --app-version=${{ env.version }} challenge-01/source/charts/reporting-service-website
       - name: az acr helm push
         working-directory: ${{ github.workspace }}
         run: |
-          az acr helm push -n ${{ secrets.registry }} reporting-service-web-${{ env.version }}.tgz --force
+          az acr helm push -n ${{ secrets.registry }} reporting-service-website-${{ env.version }}.tgz --force
   push:
     needs: build
     runs-on: ubuntu-latest
@@ -95,4 +95,4 @@ jobs:
       - name: helm upgrade install
         working-directory: ${{ github.workspace }}
         run: |
-          helm3 upgrade --install --version ${{ env.version }} -n reporting-service-web reporting-service-web ${{ secrets.registry }}/reporting-service-web --namespace=challenge-01 --set replicaCount=1 --set image.repository=${{ secrets.registry }}.azurecr.io/reporting-service-web:${{ env.version }}
+          helm3 upgrade --install --version ${{ env.version }} -n reporting-service-website reporting-service-website ${{ secrets.registry }}/reporting-service-website --namespace=challenge-01 --set replicaCount=1 --set image.repository=${{ secrets.registry }}.azurecr.io/reporting-service-website:${{ env.version }}
