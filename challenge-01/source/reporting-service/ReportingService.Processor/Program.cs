@@ -151,9 +151,9 @@ namespace ReportingService.Processor
                             Console.WriteLine($">> Record saved successfully");
 
                             // SendGrid
-                            sendGridHelper = new SendGridHelper();
-                            await sendGridHelper.SendReportEmailAsync(obj_decrypted.Email, obj_decrypted.Fullname, pdf);
-                            Console.WriteLine($">> Email: {obj_decrypted.Email} sent successfully");
+                            //sendGridHelper = new SendGridHelper();
+                            //await sendGridHelper.SendReportEmailAsync(obj_decrypted.Email, obj_decrypted.Fullname, pdf);
+                            //Console.WriteLine($">> Email: {obj_decrypted.Email} sent successfully");
 
                             channel.BasicAck(ea.DeliveryTag, false);
                             Console.WriteLine($">> Acknowledgement completed, delivery tag: {ea.DeliveryTag}");
